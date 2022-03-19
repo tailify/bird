@@ -1662,7 +1662,7 @@ nl_parse_route(struct nl_parse_state *s, struct nlmsghdr *h)
 	  if ((i->rtm_family == AF_INET6) && ipa_in_netX(ra->nh.gw, (net_addr *) &sit))
 	    return;
 
-	  if (i->rtm_flags & RTNH_F_ONLINK)
+	  if ((i->rtm_flags & RTNH_F_ONLINK) || (krt_src == KRT_SRC_ALIEN))
 	    ra->nh.flags |= RNF_ONLINK;
 
 	  neighbor *nbr;
@@ -1670,9 +1670,12 @@ nl_parse_route(struct nl_parse_state *s, struct nlmsghdr *h)
 			   (ra->nh.flags & RNF_ONLINK) ? NEF_ONLINK : 0);
 	  if (!nbr || (nbr->scope == SCOPE_HOST))
 	    {
-	      log(L_ERR "KRT: Received route %N with strange next-hop %I", net->n.addr,
+           if(strstr(nbr->iface->name, "cilium_") != nbr->iface->name)
+            {
+              log(L_ERR "KRT: Received route %N with strange next-hop %I", net->n.addr,
                   ra->nh.gw);
-	      return;
+              return;
+            }
 	    }
 	}
 
